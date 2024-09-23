@@ -5,6 +5,8 @@ import time
 from datetime import datetime, timedelta
 from colorama import Fore, Style, init
 import os
+from fake_useragent import UserAgent  # Ensure you have this installed
+import random
 
 init(autoreset=True)  # Initialize colorama for cross-platform colored text
 
@@ -31,6 +33,8 @@ def convert_timestamp_to_readable(timestamp):
     return dt.strftime("%d %B %Y, %H:%M:%S")
 
 def login(init_data):
+    ua = UserAgent()  # Create an instance of UserAgent to get a random user-agent
+
     url = "https://api.catopia.io/api/v1/auth/telegram"
     headers = {
         "accept": "*/*",
@@ -46,7 +50,8 @@ def login(init_data):
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
         "Referer": "https://build.catopia.io/",
-        "Referrer-Policy": "strict-origin-when-cross-origin"
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "User-Agent": ua.random  # Use a random User-Agent
     }
 
     body = {
@@ -55,12 +60,24 @@ def login(init_data):
 
     response = requests.post(url, json=body, headers=headers)
 
-    # Check if response content is valid JSON
+    # Handle response (same as before)
     try:
         data = response.json()  # Attempt to parse JSON
     except json.JSONDecodeError:
         print(f"Error: Response could not be decoded as JSON. Response text: {response.text}")
         return None, None
+
+    if isinstance(data, dict):
+        if data.get('success'):
+            access_token = data['data'].get('accessToken')
+            refresh_token = data['data'].get('refreshToken')
+            return access_token, refresh_token
+        else:
+            print(f"Login failed: {data}")
+    else:
+        print(f"Unexpected response format: {data}")
+
+    return None, None
 
     # Ensure the data is a dictionary before accessing its keys
     if isinstance(data, dict):
@@ -77,6 +94,8 @@ def login(init_data):
     return None, None
 
 def create_headers(access_token):
+    ua = UserAgent()  # Create an instance of UserAgent to get a random user-agent
+
     return {
         "accept": "*/*",
         "accept-language": "en-US,en;q=0.9,id;q=0.8,su;q=0.7",
@@ -91,7 +110,8 @@ def create_headers(access_token):
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
         "Referer": "https://build.catopia.io/",
-        "Referrer-Policy": "strict-origin-when-cross-origin"
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "User-Agent": ua.random  # Use a random User-Agent
     }
 
 def get_user_info(access_token):
